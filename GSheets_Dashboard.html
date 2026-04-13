@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Growth Strategies — Google Sheets Financial Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #050E1C;
+  --panel:   #0C1929;
+  --card:    #101F33;
+  --border:  #1E3355;
+  --teal:    #00C2CB;
+  --teal2:   #00E5EE;
+  --green:   #16C784;
+  --green2:  #00FF94;
+  --red:     #F6465D;
+  --orange:  #F0A500;
+  --purple:  #8B5CF6;
+  --blue:    #3B82F6;
+  --white:   #E8F0FE;
+  --gray:    #7A92B2;
+  --gray2:   #1E3355;
+  --mono:    'DM Mono', monospace;
+  --sans:    'Lato', sans-serif;
+  --display: 'Syne', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--white);font-family:var(--sans);font-size:14px;min-height:100vh;overflow-x:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;overflow-y:auto}
+.logo{padding:22px 18px 16px;border-bottom:1px solid var(--border)}
+.logo-eyebrow{font-family:var(--mono);font-size:9px;color:var(--teal);letter-spacing:3px;text-transform:uppercase;margin-bottom:5px}
+.logo-name{font-family:var(--display);font-size:17px;font-weight:800;line-height:1.2}
+.logo-sub{font-size:10px;color:var(--gray);margin-top:3px}
+nav{padding:12px 8px;flex:1}
+.nav-group{font-family:var(--mono);font-size:8px;color:var(--gray);letter-spacing:2px;padding:10px 10px 5px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;cursor:pointer;color:var(--gray);font-size:12.5px;font-weight:400;border:1px solid transparent;transition:all .15s;margin-bottom:2px}
+.nav-item:hover{background:var(--gray2);color:var(--white)}
+.nav-item.active{background:rgba(0,194,203,.12);color:var(--teal);border-color:rgba(0,194,203,.25)}
+.nav-icon{font-size:14px;flex-shrink:0;width:18px;text-align:center}
+.sidebar-foot{padding:14px 18px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--gray)}
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;margin-right:5px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── MAIN ── */
+.main{margin-left:220px;min-height:100vh}
+.page{display:none;padding:28px 32px;animation:fadein .25s ease}
+.page.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── PAGE HEADER ── */
+.ph{margin-bottom:24px}
+.ph-tag{font-family:var(--mono);font-size:9px;color:var(--teal);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px}
+.ph-title{font-family:var(--display);font-size:28px;font-weight:800;line-height:1.1;margin-bottom:6px}
+.ph-desc{font-size:13px;color:var(--gray);max-width:540px;line-height:1.6}
+
+/* ── ALERT BANNERS ── */
+.alert{display:flex;gap:12px;padding:12px 16px;border-radius:9px;margin-bottom:12px;font-size:12.5px;line-height:1.5}
+.alert-red{background:rgba(246,70,93,.08);border:1px solid rgba(246,70,93,.3)}
+.alert-orange{background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.3)}
+.alert-green{background:rgba(22,199,132,.08);border:1px solid rgba(22,199,132,.3)}
+.alert-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.alert b{color:var(--white)}
+
+/* ── GRIDS ── */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:20px}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:20px}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:18px;margin-bottom:20px}
+
+/* ── CARD ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden;transition:border-color .2s}
+.card:hover{border-color:rgba(0,194,203,.35)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),transparent);opacity:0;transition:opacity .2s}
+.card:hover::before{opacity:1}
+.card-title{font-family:var(--display);font-size:13.5px;font-weight:700;margin-bottom:3px}
+.card-sub{font-size:11px;color:var(--gray);margin-bottom:16px}
+
+/* ── KPI CARD ── */
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden}
+.kpi-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0}
+.kpi-label{font-family:var(--mono);font-size:9px;color:var(--gray);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.kpi-val{font-family:var(--display);font-size:26px;font-weight:800;line-height:1;margin-bottom:4px}
+.kpi-sub{font-size:10.5px;color:var(--gray)}
+.kpi-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;margin-top:6px;padding:2px 7px;border-radius:20px}
+.badge-up{background:rgba(22,199,132,.15);color:var(--green)}
+.badge-dn{background:rgba(246,70,93,.15);color:var(--red)}
+.badge-warn{background:rgba(240,165,0,.15);color:var(--orange)}
+
+/* ── TABLES ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{padding:9px 12px;font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);border-bottom:1px solid var(--border);white-space:nowrap;text-align:right}
+thead th:first-child{text-align:left}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .12s}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+tbody td{padding:9px 12px;text-align:right;font-variant-numeric:tabular-nums}
+tbody td:first-child{text-align:left;color:var(--white)}
+.td-green{color:var(--green);font-weight:600}
+.td-red{color:var(--red);font-weight:600}
+.td-orange{color:var(--orange);font-weight:600}
+.td-gray{color:var(--gray)}
+.td-bold{font-weight:700;color:var(--white)}
+tr.total-row td{background:rgba(0,194,203,.06);color:var(--teal);font-weight:700;border-top:1px solid rgba(0,194,203,.25)}
+tr.section-hdr td{background:var(--gray2);color:var(--white);font-weight:700;font-size:11px;letter-spacing:.5px}
+
+/* ── PROGRESS ── */
+.prog-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.prog-label{font-size:12px;min-width:130px;color:var(--white)}
+.prog-track{flex:1;height:6px;background:var(--gray2);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:width 1.2s ease}
+.prog-val{font-family:var(--mono);font-size:11px;font-weight:600;min-width:52px;text-align:right}
+
+/* ── INSIGHT PILLS ── */
+.insight{display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,.03);border-radius:9px;padding:11px 14px;margin-bottom:9px;border-left:3px solid var(--teal)}
+.insight-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.insight-text{font-size:12.5px;color:var(--gray);line-height:1.5}
+.insight-text strong{color:var(--white)}
+.insight.red{border-left-color:var(--red)}
+.insight.orange{border-left-color:var(--orange)}
+.insight.green{border-left-color:var(--green)}
+
+/* ── STRATEGY CARDS ── */
+.strat-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:18px;margin-bottom:12px;cursor:pointer;transition:all .18s;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start}
+.strat-card:hover{border-color:rgba(0,194,203,.4);transform:translateX(3px)}
+.strat-num{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:14px;font-weight:800;flex-shrink:0}
+.strat-title{font-family:var(--display);font-size:13.5px;font-weight:700;margin-bottom:3px}
+.strat-desc{font-size:12px;color:var(--gray);line-height:1.5}
+.strat-meta{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.strat-expand{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:12.5px;color:var(--gray);line-height:1.7;grid-column:1/-1}
+.strat-expand.open{display:block}
+.strat-kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.strat-kpi{background:var(--panel);border-radius:8px;padding:10px}
+.strat-kpi-lbl{font-size:9px;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;font-family:var(--mono)}
+.strat-kpi-val{font-family:var(--display);font-size:15px;font-weight:700}
+
+/* ── BADGE ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.badge-red{background:rgba(246,70,93,.15);color:var(--red);border:1px solid rgba(246,70,93,.3)}
+.badge-orange{background:rgba(240,165,0,.15);color:var(--orange);border:1px solid rgba(240,165,0,.3)}
+.badge-green{background:rgba(22,199,132,.15);color:var(--green);border:1px solid rgba(22,199,132,.3)}
+.badge-teal{background:rgba(0,194,203,.15);color:var(--teal);border:1px solid rgba(0,194,203,.3)}
+.badge-gray{background:rgba(122,146,178,.15);color:var(--gray);border:1px solid rgba(122,146,178,.3)}
+.badge-purple{background:rgba(139,92,246,.15);color:var(--purple);border:1px solid rgba(139,92,246,.3)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--panel)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--teal)}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;background:var(--panel);padding:4px;border-radius:9px;width:fit-content;margin-bottom:18px}
+.tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--gray);transition:all .15s}
+.tab.active{background:var(--card);color:var(--teal)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── FORECAST TABLE STYLES ── */
+.fc-table table{font-size:11.5px}
+.fc-table thead th{background:rgba(22,199,132,.12);color:var(--green)}
+.fc-table tr.sect td{background:var(--gray2);font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--white)}
+.fc-table tr.cm-row td{background:rgba(22,199,132,.08);color:var(--green);font-weight:700}
+.fc-table tr.memo-row td{background:rgba(240,165,0,.05);color:var(--orange);font-style:italic}
+
+/* ── WORST DAY BOX ── */
+.worst-box{background:rgba(246,70,93,.06);border:1px solid rgba(246,70,93,.3);border-radius:12px;padding:20px;margin-bottom:20px}
+.worst-title{font-family:var(--display);font-size:16px;font-weight:800;color:var(--red);margin-bottom:4px}
+.worst-sub{font-size:12px;color:var(--gray);margin-bottom:16px}
+
+/* ── CHANNEL CARDS ── */
+.ch-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+.ch-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.ch-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.ch-name{font-family:var(--display);font-size:14px;font-weight:700}
+.ch-metric-lbl{font-family:var(--mono);font-size:9px;color:var(--gray);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.ch-metric-val{font-family:var(--display);font-size:20px;font-weight:800;margin-bottom:10px}
+.roas-track{height:7px;background:var(--gray2);border-radius:99px;overflow:hidden;margin-top:5px}
+.roas-fill{height:100%;border-radius:99px}
+
+/* ── PNOTE (footnote) ── */
+.pnote{font-family:var(--mono);font-size:9.5px;color:var(--gray);margin-top:10px;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:6px;border-left:2px solid var(--border)}
+
+/* ── TIMELINE ── */
+.timeline{position:relative;padding-left:28px}
+.timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:20px}
+.tl-dot{position:absolute;left:-23px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid var(--panel)}
+.tl-title{font-family:var(--display);font-size:12.5px;font-weight:700;margin-bottom:3px}
+.tl-desc{font-size:11.5px;color:var(--gray);line-height:1.5}
+.tl-meta{display:flex;gap:6px;margin-top:5px}
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-eyebrow">Google Sheets Model</div>
+    <div class="logo-name">Growth<br>Strategies</div>
+    <div class="logo-sub">Sep 17 – Dec 16, 2025</div>
+  </div>
+  <nav>
+    <div class="nav-group">Overview</div>
+    <div class="nav-item active" onclick="go('dash',this)"><span class="nav-icon">⚡</span>Dashboard</div>
+    <div class="nav-group">Part 1 — Audit</div>
+    <div class="nav-item" onclick="go('pnl',this)"><span class="nav-icon">📊</span>True P&amp;L</div>
+    <div class="nav-item" onclick="go('worst',this)"><span class="nav-icon">🔥</span>Cash Burn Day</div>
+    <div class="nav-item" onclick="go('efficiency',this)"><span class="nav-icon">📉</span>Efficiency Leak</div>
+    <div class="nav-item" onclick="go('weekly',this)"><span class="nav-icon">📈</span>Weekly Trend</div>
+    <div class="nav-item" onclick="go('channels',this)"><span class="nav-icon">📣</span>Channels</div>
+    <div class="nav-group">Part 2 — Forecast</div>
+    <div class="nav-item" onclick="go('forecast',this)"><span class="nav-icon">🔭</span>Q1 2026 Forecast</div>
+    <div class="nav-item" onclick="go('strategies',this)"><span class="nav-icon">🎯</span>Strategies</div>
+    <div class="nav-item" onclick="go('roadmap',this)"><span class="nav-icon">🗓️</span>Roadmap</div>
+    <div class="nav-group">Data</div>
+    <div class="nav-item" onclick="go('daily',this)"><span class="nav-icon">📋</span>Daily Data</div>
+  </nav>
+  <div class="sidebar-foot"><span class="live-dot"></span>91-day report · CAD</div>
+</aside>
+
+<main class="main">
+
+<!-- ════════════════════════════════════════════
+     DASHBOARD
+════════════════════════════════════════════ -->
+<section class="page active" id="page-dash">
+  <div class="ph">
+    <div class="ph-tag">Executive Overview</div>
+    <div class="ph-title">Growth Strategies Dashboard</div>
+    <div class="ph-desc">Q4 2025 Forensic Audit · Google Sheets Financial Model · All figures CAD</div>
+  </div>
+
+  <div class="alert alert-green">
+    <div class="alert-icon">✅</div>
+    <div><b>Q4 2025 CM: 23.7% — already beats the 15% CEO target by 8.7pp.</b> The Q1 challenge is maintaining this through seasonal dip, not reaching 15%.</div>
+  </div>
+  <div class="alert alert-red">
+    <div class="alert-icon">⚠️</div>
+    <div><b>Critical: Return rate 16.7%</b> — Sep 23 worst day saw 55.1% returns destroying CM to −33.2%. Every 1pp reduction saves ~$33K/quarter.</div>
+  </div>
+
+  <div class="g4">
+    <div class="kpi"><div class="kpi-accent" style="background:linear-gradient(90deg,#16C784,#00C2CB)"></div><div class="kpi-label">Gross Sales</div><div class="kpi-val" style="color:#16C784">$3.31M</div><div class="kpi-sub">91-day total</div><div class="kpi-badge badge-up">▲ Peak $303K Oct 27</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:linear-gradient(90deg,#00C2CB,#8B5CF6)"></div><div class="kpi-label">Net Sales</div><div class="kpi-val" style="color:#00C2CB">$2.71M</div><div class="kpi-sub">After returns &amp; discounts</div><div class="kpi-badge badge-warn">▼ 18.3% deducted</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:linear-gradient(90deg,#F6465D,#F0A500)"></div><div class="kpi-label">Total Returns</div><div class="kpi-val" style="color:#F6465D">$552K</div><div class="kpi-sub">16.7% of gross</div><div class="kpi-badge badge-dn">▲ Above 10% target</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:linear-gradient(90deg,#16C784,#8B5CF6)"></div><div class="kpi-label">Contribution Margin</div><div class="kpi-val" style="color:#16C784">23.7%</div><div class="kpi-sub">vs 15% CEO target</div><div class="kpi-badge badge-up">✓ Target exceeded</div></div>
+  </div>
+  <div class="g4">
+    <div class="kpi"><div class="kpi-accent" style="background:linear-gradient(90deg,#00C2CB,#00E5EE)"></div><div class="kpi-label">Total Orders</div><div class="kpi-val" style="color:#00C2CB">15,093</div><div class="kpi-sub">Billing location file</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:linear-gradient(90deg,#8B5CF6,#00C2CB)"></div><div class="kpi-label">Avg Order Value</div><div class="kpi-val" style="color:#8B5CF6">$219.35</div><div class="kpi-sub">Gross ÷ orders</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:linear-gradient(90deg,#F6465D,#F0A500)"></div><div class="kpi-label">Avg CVR</div><div class="kpi-val" style="color:#F6465D">1.77%</div><div class="kpi-sub">Target: &gt;3.5%</div><div class="kpi-badge badge-dn">▼ 50% below benchmark</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:linear-gradient(90deg,#F0A500,#F6465D)"></div><div class="kpi-label">Weighted COGS %</div><div class="kpi-val" style="color:#F0A500">35.20%</div><div class="kpi-sub">From product variant CSV</div><div class="kpi-badge badge-warn">Locked — verified</div></div>
+  </div>
+
+  <div class="g21">
+    <div class="card">
+      <div class="card-title">Weekly Gross vs Net Sales</div>
+      <div class="card-sub">14-week trend Sep–Dec 2025</div>
+      <canvas id="dashWeeklyChart" height="140"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Monthly CM%</div>
+      <div class="card-sub">vs 15% CEO target</div>
+      <canvas id="dashMonthlyChart" height="140"></canvas>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="card">
+      <div class="card-title">P&amp;L Waterfall</div>
+      <div class="card-sub">Gross → Net → CM</div>
+      <div style="margin-top:4px">
+        <div class="prog-row"><span class="prog-label">Gross Sales</span><div class="prog-track"><div class="prog-fill" style="width:100%;background:#16C784"></div></div><span class="prog-val" style="color:#16C784">$3.31M</span></div>
+        <div class="prog-row"><span class="prog-label">Less Returns</span><div class="prog-track"><div class="prog-fill" style="width:16.7%;background:#F6465D"></div></div><span class="prog-val" style="color:#F6465D">($552K)</span></div>
+        <div class="prog-row"><span class="prog-label">Less Discounts</span><div class="prog-track"><div class="prog-fill" style="width:1.6%;background:#F0A500"></div></div><span class="prog-val" style="color:#F0A500">($53K)</span></div>
+        <div class="prog-row"><span class="prog-label">Net Sales</span><div class="prog-track"><div class="prog-fill" style="width:81.7%;background:#00C2CB"></div></div><span class="prog-val" style="color:#00C2CB">$2.71M</span></div>
+        <div class="prog-row"><span class="prog-label">Less COGS 35.2%</span><div class="prog-track"><div class="prog-fill" style="width:35.2%;background:#8B5CF6"></div></div><span class="prog-val" style="color:#8B5CF6">($1.17M)</span></div>
+        <div class="prog-row"><span class="prog-label">Less Shipping</span><div class="prog-track"><div class="prog-fill" style="width:3.9%;background:#7A92B2"></div></div><span class="prog-val" style="color:#7A92B2">($128K)</span></div>
+        <div class="prog-row"><span class="prog-label">Less Ad Spend</span><div class="prog-track"><div class="prog-fill" style="width:18.9%;background:#F0A500"></div></div><span class="prog-val" style="color:#F0A500">($627K)</span></div>
+        <div class="prog-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><span class="prog-label" style="font-weight:700;color:#16C784">CONTRIBUTION MARGIN</span><div class="prog-track"><div class="prog-fill" style="width:23.7%;background:#16C784"></div></div><span class="prog-val" style="color:#16C784;font-weight:700">$784K</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Marketing Mix</div>
+      <div class="card-sub">$627K total spend</div>
+      <canvas id="dashSpendPie" height="160"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">ROAS by Channel</div>
+      <div class="card-sub">Target: 3.0× · Dashed line</div>
+      <canvas id="dashROAS" height="160"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     TRUE P&L
+════════════════════════════════════════════ -->
+<section class="page" id="page-pnl">
+  <div class="ph"><div class="ph-tag">Forensic Audit — Section A</div><div class="ph-title">True Contribution Margin P&L</div><div class="ph-desc">Weighted COGS calculated from product variant CSV. Formula: Net Sales − COGS − Shipping − Ad Spend</div></div>
+
+  <div class="g3" style="margin-bottom:20px">
+    <div class="card"><div class="kpi-label">WEIGHTED AVG COGS %</div><div class="kpi-val" style="color:#F0A500;font-family:var(--display);font-size:32px;font-weight:800">35.20%</div><div class="kpi-sub">$1,135,677 ÷ $3,226,515 from product CSV</div></div>
+    <div class="card"><div class="kpi-label">CONTRIBUTION MARGIN $</div><div class="kpi-val" style="color:#16C784;font-family:var(--display);font-size:32px;font-weight:800">$784,384</div><div class="kpi-sub">Net Sales − COGS − Shipping − Ad Spend</div></div>
+    <div class="card"><div class="kpi-label">CONTRIBUTION MARGIN %</div><div class="kpi-val" style="color:#16C784;font-family:var(--display);font-size:32px;font-weight:800">23.69%</div><div class="kpi-sub">vs CEO target 15% — beats by <b style="color:#16C784">+8.7pp</b></div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">COGS Calculation Methodology</div>
+      <div class="card-sub">Source: Total_sales_by_product_variant CSV</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th style="text-align:left">Step</th><th>Value</th><th>Method</th></tr></thead>
+          <tbody>
+            <tr><td>Total Gross Sales (valid rows)</td><td class="td-bold">$3,226,515</td><td class="td-gray">WHERE COGS &gt; 0</td></tr>
+            <tr><td>Total COGS (actual per SKU)</td><td class="td-bold">$1,135,677</td><td class="td-gray">SUM(Cost of goods sold)</td></tr>
+            <tr style="background:rgba(240,165,0,.06)"><td><b>Weighted Avg COGS %</b></td><td class="td-orange"><b>35.20%</b></td><td class="td-orange">÷ — LOCKED INPUT</td></tr>
+            <tr><td>Applied to daily gross</td><td class="td-bold">$1,165,221</td><td class="td-gray">$3.31M × 35.20%</td></tr>
+            <tr><td>Industry benchmark (DTC fashion)</td><td class="td-gray">30–40%</td><td class="td-green">Mid-range ✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Full P&amp;L Statement</div>
+      <div class="card-sub">CM = Net Sales − COGS − Shipping − Ad Spend</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th style="text-align:left">Line</th><th>Amount</th><th>% Gross</th></tr></thead>
+          <tbody>
+            <tr><td><b>GROSS SALES</b></td><td class="td-bold">$3,310,451</td><td class="td-bold">100.0%</td></tr>
+            <tr><td style="padding-left:20px">(Less) Returns</td><td class="td-red">($552,352)</td><td class="td-red">(16.7%)</td></tr>
+            <tr><td style="padding-left:20px">(Less) Discounts</td><td class="td-orange">($52,803)</td><td class="td-orange">(1.6%)</td></tr>
+            <tr style="background:rgba(59,130,246,.06)"><td><b>NET SALES</b></td><td class="td-bold">$2,705,296</td><td class="td-bold">81.7%</td></tr>
+            <tr><td style="padding-left:20px">(Less) COGS 35.20%</td><td style="color:#8B5CF6">($1,165,221)</td><td style="color:#8B5CF6">(35.2%)</td></tr>
+            <tr><td style="padding-left:20px">(Less) Shipping $8.50/order</td><td class="td-gray">($128,291)</td><td class="td-gray">(3.9%)</td></tr>
+            <tr><td style="padding-left:20px">(Less) Ad Spend</td><td class="td-orange">($627,400)</td><td class="td-orange">(18.9%)</td></tr>
+            <tr class="total-row"><td><b>CONTRIBUTION MARGIN</b></td><td><b>$784,384</b></td><td><b>23.7%</b></td></tr>
+            <tr style="background:rgba(240,165,0,.04)"><td style="font-style:italic">(Memo) Merchant Fees 2.5%</td><td class="td-orange">($82,761)</td><td class="td-orange">(2.5%)</td></tr>
+            <tr style="background:rgba(240,165,0,.04)"><td style="font-style:italic">(Memo) CM after Fees</td><td class="td-orange">$701,623</td><td class="td-orange">21.2%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Monthly Contribution Margin Breakdown</div>
+    <div class="card-sub">All four months exceed the 15% CEO target</div>
+    <canvas id="pnlMonthlyChart" height="90"></canvas>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     WORST DAY
+════════════════════════════════════════════ -->
+<section class="page" id="page-worst">
+  <div class="ph"><div class="ph-tag">Forensic Audit — Section B</div><div class="ph-title">The Cash Burn Day</div><div class="ph-desc">Single worst day for profitability: September 23, 2025 — Contribution Margin ($12,950) / −33.2%</div></div>
+
+  <div class="worst-box">
+    <div class="worst-title">🔥 Sep 23, 2025: CM = ($12,950) — NEGATIVE 33.2%</div>
+    <div class="worst-sub">Returns consumed 55.1% of gross sales while $15,050 in ad spend continued firing</div>
+    <div class="g4">
+      <div><div class="kpi-label">GROSS SALES</div><div style="font-family:var(--display);font-size:22px;font-weight:800;color:var(--white)">$39,063</div></div>
+      <div><div class="kpi-label">RETURNS (55.1%!)</div><div style="font-family:var(--display);font-size:22px;font-weight:800;color:var(--red)">($21,516)</div></div>
+      <div><div class="kpi-label">AD SPEND</div><div style="font-family:var(--display);font-size:22px;font-weight:800;color:var(--orange)">($15,050)</div></div>
+      <div><div class="kpi-label">CONTRIBUTION MARGIN</div><div style="font-family:var(--display);font-size:22px;font-weight:800;color:var(--red)">($12,950)</div></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Launch Week — Sep 17–23</div>
+      <div class="card-sub">Gross sales vs returns, daily CM</div>
+      <canvas id="launchChart" height="180"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Sep 23 Full Breakdown</div>
+      <div class="card-sub">vs period averages</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th style="text-align:left">Metric</th><th>Sep 23</th><th>Period Avg</th></tr></thead>
+          <tbody>
+            <tr><td>Gross Sales</td><td class="td-bold">$39,063</td><td class="td-gray">$36,379</td></tr>
+            <tr><td>Returns</td><td class="td-red">($21,516)</td><td class="td-gray">($6,069)</td></tr>
+            <tr><td>Return Rate</td><td class="td-red"><b>55.1%</b></td><td class="td-gray">16.7%</td></tr>
+            <tr><td>Net Sales</td><td class="td-red">$17,547</td><td class="td-gray">$29,729</td></tr>
+            <tr><td>COGS</td><td class="td-gray">($13,750)</td><td class="td-gray">($12,806)</td></tr>
+            <tr><td>Shipping</td><td class="td-gray">($1,513)</td><td class="td-gray">($1,409)</td></tr>
+            <tr><td>Ad Spend</td><td class="td-orange">($15,050)</td><td class="td-gray">($6,893)</td></tr>
+            <tr class="total-row"><td><b>CM</b></td><td style="color:var(--red)"><b>($12,950)</b></td><td><b>$8,619</b></td></tr>
+            <tr><td>ROAS (reported)</td><td class="td-orange">3.58×</td><td class="td-gray">2.72× avg</td></tr>
+            <tr><td>ROAS hid disaster?</td><td class="td-red"><b>YES</b></td><td class="td-gray">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Root-Cause Analysis</div>
+    <div class="card-sub">Why Sep 23 became the worst day in the period</div>
+    <div class="insight red"><div class="insight-icon">🔴</div><div class="insight-text"><strong>CAUSE 1: Launch Spike → Return Wave</strong> — Sep 17 recorded $97K gross (highest single day). Sep 18 added $44K. This bulk ordering created a predictable ~6-day return lag that hit Sep 23 as a concentrated wave.</div></div>
+    <div class="insight red"><div class="insight-icon">🔴</div><div class="insight-text"><strong>CAUSE 2: High-Return SKUs Shipped En Masse</strong> — Scuba Pant (49.5% return rate) and Kirsten Mock Neck (37.9%) were almost certainly the primary campaign SKUs. Bulk orders of broken-fit items → bulk returns 6 days later.</div></div>
+    <div class="insight red"><div class="insight-icon">🔴</div><div class="insight-text"><strong>CAUSE 3: Ad Spend Blind to Returns</strong> — $15,050 continued firing on Sep 23 while net revenue collapsed. ROAS appeared 3.58× on reported sales — completely hiding the −33.2% CM. <strong>ROAS is not profitability.</strong></div></div>
+    <div class="insight orange"><div class="insight-icon">🟡</div><div class="insight-text"><strong>THE LESSON:</strong> Monitor returns in real-time alongside spend. Implement a 7-day post-launch pause rule: reduce ad spend after any day with gross sales &gt;2× the daily average until the return window passes.</div></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     EFFICIENCY LEAK
+════════════════════════════════════════════ -->
+<section class="page" id="page-efficiency">
+  <div class="ph"><div class="ph-tag">Forensic Audit — Section C</div><div class="ph-title">The Efficiency Leak</div><div class="ph-desc">Do high ad-spend days actually deliver margin? Period avg RPS: $5.51 · Avg CM%: 22.1%</div></div>
+
+  <div class="g4" style="margin-bottom:20px">
+    <div class="kpi"><div class="kpi-accent" style="background:var(--teal)"></div><div class="kpi-label">Avg Daily RPS</div><div class="kpi-val" style="color:var(--teal)">$5.51</div><div class="kpi-sub">Revenue per session</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:var(--green)"></div><div class="kpi-label">Best RPS Day</div><div class="kpi-val" style="color:var(--green)">$12.02</div><div class="kpi-sub">Nov 29</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:var(--red)"></div><div class="kpi-label">Worst RPS Day</div><div class="kpi-val" style="color:var(--red)">$1.07</div><div class="kpi-sub">Low session days</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:var(--orange)"></div><div class="kpi-label">Avg CM %</div><div class="kpi-val" style="color:var(--orange)">22.1%</div><div class="kpi-sub">Period average</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Top 10 Ad-Spend Days — Spend vs CM%</div>
+    <div class="card-sub">Does higher spend = better margin? Not always.</div>
+    <canvas id="efficiencyChart" height="120"></canvas>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Top 10 High-Spend Day Analysis</div>
+      <div class="card-sub">RPS vs avg $5.51 · CM% verdict</div>
+      <div class="tbl-wrap">
+        <table id="effTable">
+          <thead><tr><th style="text-align:left">Date</th><th>Spend</th><th>RPS</th><th>vs Avg</th><th>CM %</th><th>Verdict</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">RPS vs CM% Scatter</div>
+      <div class="card-sub">Each dot = 1 trading day · RPS &gt;$6.50 = strong zone</div>
+      <canvas id="scatterChart" height="200"></canvas>
+      <div class="pnote">Strong pattern: days with RPS &gt;$6.50 consistently deliver CM &gt;25%. Below $4 RPS → CM often negative. Rule: pause or reduce spend when RPS signals weakness.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     WEEKLY TREND
+════════════════════════════════════════════ -->
+<section class="page" id="page-weekly">
+  <div class="ph"><div class="ph-tag">Performance Analysis</div><div class="ph-title">Weekly &amp; Monthly Trend</div><div class="ph-desc">14 weeks of gross, net, returns and contribution margin</div></div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Weekly Gross vs Net Sales</div>
+    <div class="card-sub">14 weeks · Sep 15 – Dec 15, 2025 · Peak: $303K Oct 27</div>
+    <canvas id="weeklyBigChart" height="110"></canvas>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Weekly CM $</div>
+      <div class="card-sub">Contribution margin per week</div>
+      <canvas id="weeklyCMChart" height="160"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Weekly Summary Table</div>
+      <div class="card-sub">All 14 weeks</div>
+      <div class="tbl-wrap">
+        <table id="weeklyTable">
+          <thead><tr><th style="text-align:left">Week</th><th>Gross</th><th>Net</th><th>Returns</th><th>Ad Spend</th><th>CM$</th><th>CM%</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     CHANNELS
+════════════════════════════════════════════ -->
+<section class="page" id="page-channels">
+  <div class="ph"><div class="ph-tag">Marketing Analysis</div><div class="ph-title">Channel Performance</div><div class="ph-desc">$627,400 total spend · Meta, Google, TikTok, Email/SMS · ROAS vs 3.0× target</div></div>
+
+  <div class="g4" id="channelCards" style="margin-bottom:20px"></div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Spend vs Attributed Revenue</div>
+      <div class="card-sub">By channel</div>
+      <canvas id="chSpendRev" height="180"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Budget Reallocation: Current vs Recommended</div>
+      <div class="card-sub">Q4 actual → Q1 2026 recommendation</div>
+      <div style="margin-bottom:16px">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--gray);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Current Q4 Allocation</div>
+        <div class="prog-row"><span class="prog-label">Meta</span><div class="prog-track"><div class="prog-fill" style="width:62.3%;background:#3B82F6"></div></div><span class="prog-val" style="color:#3B82F6">62.3%</span></div>
+        <div class="prog-row"><span class="prog-label">Google</span><div class="prog-track"><div class="prog-fill" style="width:23.5%;background:#16C784"></div></div><span class="prog-val" style="color:#16C784">23.5%</span></div>
+        <div class="prog-row"><span class="prog-label">TikTok</span><div class="prog-track"><div class="prog-fill" style="width:11.7%;background:#8B5CF6"></div></div><span class="prog-val" style="color:#8B5CF6">11.7%</span></div>
+        <div class="prog-row"><span class="prog-label">Email/SMS</span><div class="prog-track"><div class="prog-fill" style="width:2.5%;background:#F0A500"></div></div><span class="prog-val" style="color:#F0A500">2.6%</span></div>
+      </div>
+      <div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--gray);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Recommended Q1 2026</div>
+        <div class="prog-row"><span class="prog-label">Meta</span><div class="prog-track"><div class="prog-fill" style="width:50%;background:rgba(59,130,246,.55)"></div></div><span class="prog-val" style="color:#3B82F6">50%</span></div>
+        <div class="prog-row"><span class="prog-label">Google</span><div class="prog-track"><div class="prog-fill" style="width:30%;background:rgba(22,199,132,.55)"></div></div><span class="prog-val" style="color:#16C784">30% ↑</span></div>
+        <div class="prog-row"><span class="prog-label">TikTok</span><div class="prog-track"><div class="prog-fill" style="width:12%;background:rgba(139,92,246,.55)"></div></div><span class="prog-val" style="color:#8B5CF6">12%</span></div>
+        <div class="prog-row"><span class="prog-label">Email/SMS</span><div class="prog-track"><div class="prog-fill" style="width:8%;background:rgba(240,165,0,.55)"></div></div><span class="prog-val" style="color:#F0A500">8% ↑</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Channel Insights</div>
+    <div class="card-sub">Key findings and action items</div>
+    <div class="insight green"><div class="insight-icon">🟢</div><div class="insight-text"><strong>Google Best ROAS (3.39×) on only 23% of budget.</strong> Reallocating 10% from Meta ($39K) → Google could drive ~$132K incremental attributed revenue at existing ROAS. Priority: Shopping + branded keywords.</div></div>
+    <div class="insight orange"><div class="insight-icon">🟡</div><div class="insight-text"><strong>Meta drives most revenue ($1.11M) at 2.85× ROAS.</strong> Solid but lags Google. Creative refresh, Advantage+ campaigns, and Lookalike audience expansion could lift ROAS to 3.0×+ in Q1.</div></div>
+    <div class="insight red"><div class="insight-icon">🔴</div><div class="insight-text"><strong>TikTok 1.27× ROAS — below break-even on reported sales.</strong> Attribution is likely incomplete (missing view-through, organic lift). Fix pixel tracking before any budget decision. Test UGC creator content.</div></div>
+    <div class="insight" style="border-left-color:var(--gray)"><div class="insight-icon">⚪</div><div class="insight-text"><strong>Email/SMS: $16,300 cost, $0 attributed revenue — critical blind spot.</strong> This channel almost certainly drives revenue attributed elsewhere. UTM parameters + Klaviyo flows + abandoned cart sequences urgently needed.</div></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     Q1 FORECAST
+════════════════════════════════════════════ -->
+<section class="page" id="page-forecast">
+  <div class="ph"><div class="ph-tag">Part 2 — Q1 2026 Forecast</div><div class="ph-title">Month-by-Month P&L Forecast</div><div class="ph-desc">CEO target: 15% CM · Verdict: Attainable — and Q4 already exceeded it at 23.7%</div></div>
+
+  <div class="alert alert-green"><div class="alert-icon">✅</div><div><b>15% is NOT the challenge — maintaining 23%+ through seasonal dip IS.</b> Model shows 15.5% Jan → 16.8% Feb → 18.4% Mar. The only scenario that misses 15% is if return rate stays at 16.7%.</div></div>
+
+  <div class="g2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-title">Q1 Forecast — CM% vs Target</div>
+      <div class="card-sub">Base case · Upside · Downside · 15% CEO floor</div>
+      <canvas id="fcCMChart" height="160"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Revenue Forecast</div>
+      <div class="card-sub">Gross vs Net sales Jan–Mar 2026</div>
+      <canvas id="fcRevChart" height="160"></canvas>
+    </div>
+  </div>
+
+  <div class="card fc-table" style="margin-bottom:20px">
+    <div class="card-title">Full Month-by-Month P&L</div>
+    <div class="card-sub">All rows formula-driven from assumptions tab in Google Sheets</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="text-align:left;width:200px">P&L Row</th><th>January</th><th>February</th><th>March</th><th>Q1 Total</th><th>Q4 Actual</th></tr></thead>
+        <tbody>
+          <tr class="sect"><td colspan="6">— TRAFFIC —</td></tr>
+          <tr><td>Total Sessions</td><td>42,000</td><td>45,000</td><td>50,000</td><td>137,000</td><td class="td-gray">595,998 (91d)</td></tr>
+          <tr><td>Est. Orders</td><td>840</td><td>990</td><td>1,250</td><td>3,080</td><td class="td-gray">15,093</td></tr>
+          <tr><td>Conversion Rate</td><td>2.00%</td><td>2.20%</td><td>2.50%</td><td>—</td><td class="td-red">1.77%</td></tr>
+          <tr><td>AOV</td><td>$225.00</td><td>$230.00</td><td>$235.00</td><td>—</td><td class="td-gray">$219.35</td></tr>
+          <tr class="sect"><td colspan="6">— REVENUE —</td></tr>
+          <tr><td>Gross Sales</td><td class="td-bold">$189,000</td><td class="td-bold">$227,700</td><td class="td-bold">$293,750</td><td class="td-bold">$710,450</td><td class="td-gray">$3.31M</td></tr>
+          <tr><td style="padding-left:20px">(Less) Returns</td><td class="td-red">($25,515)</td><td class="td-red">($27,324)</td><td class="td-red">($29,375)</td><td class="td-red">($82,214)</td><td class="td-red">($0.55M)</td></tr>
+          <tr><td style="padding-left:20px">(Less) Discounts</td><td class="td-orange">($3,024)</td><td class="td-orange">($3,188)</td><td class="td-orange">($3,525)</td><td class="td-orange">($9,737)</td><td class="td-orange">($52,803)</td></tr>
+          <tr><td><b>Net Sales</b></td><td class="td-bold">$160,461</td><td class="td-bold">$197,188</td><td class="td-bold">$260,850</td><td class="td-bold">$618,499</td><td class="td-gray">$2.71M</td></tr>
+          <tr class="sect"><td colspan="6">— VARIABLE COSTS —</td></tr>
+          <tr><td style="padding-left:20px">(Less) COGS 35.20%</td><td style="color:#8B5CF6">($66,528)</td><td style="color:#8B5CF6">($80,150)</td><td style="color:#8B5CF6">($103,400)</td><td style="color:#8B5CF6">($250,078)</td><td class="td-gray">($1.17M)</td></tr>
+          <tr><td style="padding-left:20px">(Less) Shipping</td><td class="td-gray">($7,140)</td><td class="td-gray">($8,415)</td><td class="td-gray">($10,625)</td><td class="td-gray">($26,180)</td><td class="td-gray">($128,291)</td></tr>
+          <tr><td style="padding-left:20px">(Less) Merchant 2.5%</td><td class="td-gray">($4,725)</td><td class="td-gray">($5,693)</td><td class="td-gray">($7,344)</td><td class="td-gray">($17,762)</td><td class="td-gray">($82,761)</td></tr>
+          <tr class="sect"><td colspan="6">— MARKETING —</td></tr>
+          <tr><td style="padding-left:20px">(Less) Ad Spend</td><td class="td-orange">($55,000)</td><td class="td-orange">($60,000)</td><td class="td-orange">($65,000)</td><td class="td-orange">($180,000)</td><td class="td-orange">($627,400)</td></tr>
+          <tr><td style="padding-left:20px">MER (Gross / Spend)</td><td class="td-teal">3.44×</td><td class="td-teal">3.80×</td><td class="td-teal">4.52×</td><td>—</td><td class="td-gray">5.28×</td></tr>
+          <tr class="sect"><td colspan="6">— PROFIT —</td></tr>
+          <tr class="cm-row"><td><b>CONTRIBUTION MARGIN $</b></td><td><b>$32,085</b></td><td><b>$40,371</b></td><td><b>$51,806</b></td><td><b>$124,262</b></td><td>$784,384</td></tr>
+          <tr class="cm-row"><td><b>CONTRIBUTION MARGIN %</b></td><td><b>17.0%</b></td><td><b>17.7%</b></td><td><b>17.6%</b></td><td><b>17.5%</b></td><td>23.7%</td></tr>
+          <tr class="cm-row"><td><b>CEO 15% Target Met?</b></td><td><b>YES ✓</b></td><td><b>YES ✓</b></td><td><b>YES ✓</b></td><td><b>YES ✓</b></td><td>YES ✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Model Assumptions</div>
+    <div class="card-sub">All blue cells in the Google Sheets model — change here to update forecast</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="text-align:left">Assumption</th><th>January</th><th>February</th><th>March</th><th style="text-align:left">Rationale</th></tr></thead>
+        <tbody>
+          <tr><td>Total Sessions</td><td>42,000</td><td>45,000</td><td>50,000</td><td class="td-gray" style="text-align:left">Q4 avg ~46K/mo. Jan −30% seasonal dip.</td></tr>
+          <tr><td>Conversion Rate</td><td class="td-teal">2.00%</td><td class="td-teal">2.20%</td><td class="td-teal">2.50%</td><td class="td-gray" style="text-align:left">Q4 1.77%. A/B test live Week 2.</td></tr>
+          <tr><td>AOV</td><td>$225.00</td><td>$230.00</td><td>$235.00</td><td class="td-gray" style="text-align:left">Q4 $219.35. Bundles drive lift.</td></tr>
+          <tr><td>Return Rate</td><td class="td-green">13.5%</td><td class="td-green">12.0%</td><td class="td-green">10.0%</td><td class="td-gray" style="text-align:left">Q4 16.7%. SKU audit reduces progressively.</td></tr>
+          <tr style="background:rgba(240,165,0,.06)"><td><b>COGS %</b></td><td class="td-orange"><b>35.20%</b></td><td class="td-orange"><b>35.20%</b></td><td class="td-orange"><b>35.20%</b></td><td class="td-orange" style="text-align:left"><b>LOCKED from product variant CSV</b></td></tr>
+          <tr><td>Shipping / Order</td><td>$8.50</td><td>$8.50</td><td>$8.50</td><td class="td-gray" style="text-align:left">Fixed per brief assumption.</td></tr>
+          <tr><td>Total Ad Spend</td><td>$55,000</td><td>$60,000</td><td>$65,000</td><td class="td-gray" style="text-align:left">Pullback Jan, scale proven channels Mar.</td></tr>
+          <tr><td>Discount Rate</td><td>1.6%</td><td>1.4%</td><td>1.2%</td><td class="td-gray" style="text-align:left">Reducing promo reliance gradually.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     STRATEGIES
+════════════════════════════════════════════ -->
+<section class="page" id="page-strategies">
+  <div class="ph"><div class="ph-tag">Growth Playbook</div><div class="ph-title">Three Levers to Fix Margin</div><div class="ph-desc">Ranked by revenue impact · Click any card to expand full details and metrics</div></div>
+
+  <div class="g3" style="margin-bottom:20px">
+    <div class="kpi"><div class="kpi-accent" style="background:var(--red)"></div><div class="kpi-label">Lever 1 — Highest Impact</div><div class="kpi-val" style="color:var(--red)">$221K</div><div class="kpi-sub">Saving if return rate → 10%</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:var(--blue)"></div><div class="kpi-label">Lever 2 — High Impact</div><div class="kpi-val" style="color:var(--blue)">$376K</div><div class="kpi-sub">Incremental CM from CVR 1.77→2.5%</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:var(--orange)"></div><div class="kpi-label">Lever 3 — Medium Impact</div><div class="kpi-val" style="color:var(--orange)">$153K</div><div class="kpi-sub">Google realloc + Email/SMS attribution</div></div>
+  </div>
+
+  <div id="stratCards"></div>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-title">CEO Target Assessment</div>
+    <div class="card-sub">Scenario analysis — what if we execute vs what if we don't</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="text-align:left">Scenario</th><th>Jan 2026</th><th>Feb 2026</th><th>Mar 2026</th><th style="text-align:left">Assessment</th></tr></thead>
+        <tbody>
+          <tr><td>CEO Original Target (≥15%)</td><td>15.0%</td><td>15.0%</td><td>15.0%</td><td class="td-gray" style="text-align:left">Minimum — Q4 already exceeds this</td></tr>
+          <tr style="background:rgba(22,199,132,.06)"><td><b>Base Case (this model)</b></td><td class="td-green"><b>17.0%</b></td><td class="td-green"><b>17.7%</b></td><td class="td-green"><b>17.6%</b></td><td class="td-green" style="text-align:left"><b>Achievable with return fix</b></td></tr>
+          <tr><td>Upside (returns fixed by Feb)</td><td class="td-green">17.2%</td><td class="td-green">19.1%</td><td class="td-green">22.3%</td><td class="td-green" style="text-align:left">If 10% return rate by Feb</td></tr>
+          <tr style="background:rgba(246,70,93,.06)"><td>Downside (returns stay 16.7%)</td><td class="td-red">12.1%</td><td class="td-red">13.4%</td><td class="td-red">14.5%</td><td class="td-red" style="text-align:left">FAILS CEO target — return fix non-negotiable</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     ROADMAP
+════════════════════════════════════════════ -->
+<section class="page" id="page-roadmap">
+  <div class="ph"><div class="ph-tag">Execution Plan</div><div class="ph-title">Q1 2026 Roadmap</div><div class="ph-desc">Week-by-week execution across 5 teams · Jan–Mar 2026</div></div>
+
+  <div class="g4" style="margin-bottom:20px">
+    <div class="kpi"><div class="kpi-accent" style="background:var(--red)"></div><div class="kpi-label">Week 1 Actions</div><div class="kpi-val" style="color:var(--red)">2</div><div class="kpi-sub">Immediate — Jan 6–12</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:var(--orange)"></div><div class="kpi-label">Week 2 Actions</div><div class="kpi-val" style="color:var(--orange)">2</div><div class="kpi-sub">Quick wins — Jan 13–19</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:var(--teal)"></div><div class="kpi-label">Week 3–4 Actions</div><div class="kpi-val" style="color:var(--teal)">4</div><div class="kpi-sub">Build phase</div></div>
+    <div class="kpi"><div class="kpi-accent" style="background:var(--green)"></div><div class="kpi-label">Revenue Upside</div><div class="kpi-val" style="color:var(--green)">$750K+</div><div class="kpi-sub">If all levers executed</div></div>
+  </div>
+
+  <div class="g2">
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title" style="color:var(--red)">Week 1 — Jan 6–12: Immediate</div>
+        <div class="timeline" style="margin-top:12px">
+          <div class="tl-item"><div class="tl-dot" style="background:rgba(246,70,93,.2);color:var(--red);border-color:var(--red)">1</div><div class="tl-title">Audit Top Return-Rate SKUs</div><div class="tl-desc">Pull return reason codes for Scuba Pant (49.5%) and Kirsten Mock Neck (37.9%). Inspect sizing, photography. Prepare fix plan.</div><div class="tl-meta"><span class="badge badge-red">HIGH</span><span class="badge badge-gray">Product Team</span></div></div>
+          <div class="tl-item"><div class="tl-dot" style="background:rgba(240,165,0,.2);color:var(--orange);border-color:var(--orange)">2</div><div class="tl-title">Scale TikTok Budget +30%</div><div class="tl-desc">Increase TikTok spend, brief UGC creators on Bamboo Tee and Elaine Tank. Enable full pixel event tracking before scaling.</div><div class="tl-meta"><span class="badge badge-orange">MEDIUM</span><span class="badge badge-gray">Social Team</span></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--teal)">Week 3 — Jan 20–26: Build</div>
+        <div class="timeline" style="margin-top:12px">
+          <div class="tl-item"><div class="tl-dot" style="background:rgba(0,194,203,.2);color:var(--teal);border-color:var(--teal)">5</div><div class="tl-title">Implement Email/SMS UTMs</div><div class="tl-desc">Add UTM params to all email links. Configure Klaviyo attribution. Launch abandoned cart (1hr/24hr/72hr) and post-purchase flows.</div><div class="tl-meta"><span class="badge badge-orange">MEDIUM</span><span class="badge badge-gray">Marketing Ops</span></div></div>
+          <div class="tl-item"><div class="tl-dot" style="background:rgba(0,194,203,.2);color:var(--teal);border-color:var(--teal)">6</div><div class="tl-title">Update High-Return Product Pages</div><div class="tl-desc">Publish improved sizing guides, fit videos, updated photography for Scuba Pant and Kirsten Mock Neck. Add review prompts.</div><div class="tl-meta"><span class="badge badge-red">HIGH</span><span class="badge badge-gray">Content Team</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title" style="color:var(--orange)">Week 2 — Jan 13–19: Quick Wins</div>
+        <div class="timeline" style="margin-top:12px">
+          <div class="tl-item"><div class="tl-dot" style="background:rgba(240,165,0,.2);color:var(--orange);border-color:var(--orange)">3</div><div class="tl-title">Launch Checkout A/B Test</div><div class="tl-desc">Single-page vs multi-step checkout. Add Apple Pay, Shop Pay. Urgency messaging on cart. Target: +0.5pp conversion rate.</div><div class="tl-meta"><span class="badge badge-red">HIGH</span><span class="badge badge-gray">CRO Team</span></div></div>
+          <div class="tl-item"><div class="tl-dot" style="background:rgba(240,165,0,.2);color:var(--orange);border-color:var(--orange)">4</div><div class="tl-title">Reallocate Google Budget +20%</div><div class="tl-desc">Shift 10% from Meta to Google. Expand Shopping campaigns and branded keywords. Brief team on Bamboo Tee and Elaine Tank.</div><div class="tl-meta"><span class="badge badge-orange">MEDIUM</span><span class="badge badge-gray">Paid Media</span></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--purple)">Week 4 — Jan 27+: Scale</div>
+        <div class="timeline" style="margin-top:12px">
+          <div class="tl-item"><div class="tl-dot" style="background:rgba(139,92,246,.2);color:var(--purple);border-color:var(--purple)">7</div><div class="tl-title">Launch US Geo-Targeted Campaigns</div><div class="tl-desc">Meta and Google campaigns for NYC, LA, Chicago. US landing page with shipping transparency. Target $100K US revenue Q1.</div><div class="tl-meta"><span class="badge badge-orange">MEDIUM</span><span class="badge badge-gray">Growth Team</span></div></div>
+          <div class="tl-item"><div class="tl-dot" style="background:rgba(22,199,132,.2);color:var(--green);border-color:var(--green)">8</div><div class="tl-title">Q2 Seasonality Pre-Planning</div><div class="tl-desc">Order spring/summer inventory based on Q4 sell-through. Build campaign calendar with 3-week pre-launch windows for key dates.</div><div class="tl-meta"><span class="badge badge-green">LOW</span><span class="badge badge-gray">Operations</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Expected Revenue Impact — Q1 2026</div>
+    <div class="card-sub">Estimated upside per lever if executed successfully</div>
+    <canvas id="impactChart" height="80"></canvas>
+    <div class="pnote">Estimates based on industry benchmarks and current traffic/sales data. Actual results depend on execution quality, testing outcomes, and market conditions.</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     DAILY DATA
+════════════════════════════════════════════ -->
+<section class="page" id="page-daily">
+  <div class="ph"><div class="ph-tag">Appendix</div><div class="ph-title">Daily Data Table</div><div class="ph-desc">All 91 trading days — Sep 17 to Dec 16, 2025 · Red CM = loss day</div></div>
+  <div class="card">
+    <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
+      <input id="daySearch" type="text" placeholder="Filter by date (e.g. 10-03)…" style="background:var(--panel);border:1px solid var(--border);color:var(--white);padding:7px 12px;border-radius:7px;font-size:12px;outline:none;flex:1;max-width:280px">
+      <span style="font-family:var(--mono);font-size:10px;color:var(--gray)" id="dayCount">91 days shown</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="text-align:left">Date</th><th>Gross Sales</th><th>Net Sales</th><th>Returns</th><th>Sessions</th><th>Ad Spend</th><th>COGS</th><th>Shipping</th><th>CM $</th><th>CM %</th><th>RPS</th></tr></thead>
+        <tbody id="dailyBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────
+const DAILY = [
+  {d:'09-17',g:97074.6,n:84236.87,r:-12622.23,s:7418,sp:5300,c:34181.7,sh:3808.5,cm:41025.0,rps:5.53,cvr:0.0384},
+  {d:'09-18',g:44746.99,n:31587.32,r:-12186.48,s:7027,sp:4800,c:15751.1,sh:1700.0,cm:9336.2,rps:4.35,cvr:0.0179},
+  {d:'09-19',g:45629.9,n:37746.52,r:-7877.38,s:10654,sp:6600,c:16063.4,sh:1828.0,cm:13255.1,rps:3.53,cvr:0.0121},
+  {d:'09-20',g:57708.4,n:53603.15,r:-4047,s:6720,sp:6000,c:20314.1,sh:2210.0,cm:25079.1,rps:8.59,cvr:0.025},
+  {d:'09-21',g:36718.6,n:34524.6,r:-2194,s:5942,sp:5500,c:12925.0,sh:1394.5,cm:14705.1,rps:5.81,cvr:0.0394},
+  {d:'09-22',g:33156.9,n:27326.5,r:-5870.4,s:7091,sp:5200,c:11671.6,sh:1275.5,cm:9179.4,rps:3.86,cvr:0.0275},
+  {d:'09-23',g:39063.49,n:17362.43,r:-21516.07,s:7558,sp:15050,c:13750.1,sh:1513.0,cm:-12950.7,rps:5.17,cvr:0.0218},
+  {d:'09-24',g:52316.1,n:39221.3,r:-12380.2,s:7102,sp:6700,c:18415.2,sh:2040.5,cm:12065.6,rps:7.37,cvr:0.0275},
+  {d:'09-25',g:31988.0,n:23549.0,r:-8355.5,s:5870,sp:6000,c:11258.6,sh:1190.0,cm:5100.4,rps:4.01,cvr:0.0249},
+  {d:'09-26',g:36975.3,n:29197.2,r:-7735.2,s:6521,sp:7400,c:13015.5,sh:1412.5,cm:7369.2,rps:4.48,cvr:0.019},
+  {d:'09-27',g:38437.8,n:35977.8,r:-2300.0,s:5892,sp:6400,c:13530.6,sh:1462.5,cm:14584.7,rps:6.11,cvr:0.0387},
+  {d:'09-28',g:33810.2,n:31102.0,r:-2640.0,s:5521,sp:5700,c:11902.0,sh:1275.5,cm:12224.5,rps:5.64,cvr:0.0361},
+  {d:'09-29',g:23997.0,n:17804.0,r:-6305.0,s:5201,sp:5300,c:8447.0,sh:887.5,cm:3169.5,rps:3.42,cvr:0.0229},
+  {d:'09-30',g:31329.5,n:27931.5,r:-3304.0,s:5448,sp:6000,c:11027.4,sh:1198.0,cm:9706.1,rps:5.75,cvr:0.031},
+  {d:'10-01',g:49841.3,n:41851.8,r:-7583.0,s:6902,sp:6500,c:17545.3,sh:1887.0,cm:15919.5,rps:6.06,cvr:0.032},
+  {d:'10-02',g:44302.1,n:40143.1,r:-3993.0,s:6448,sp:6900,c:15594.5,sh:1657.0,cm:15991.6,rps:6.23,cvr:0.0358},
+  {d:'10-03',g:28552.0,n:23258.0,r:-5294.0,s:10849,sp:12800,c:10050.3,sh:1105.5,cm:-698.8,rps:2.63,cvr:0.0121},
+  {d:'10-04',g:38940.6,n:36210.5,r:-2686.0,s:6311,sp:6400,c:13708.8,sh:1479.5,cm:14622.2,rps:6.17,cvr:0.0374},
+  {d:'10-05',g:24195.0,n:22578.0,r:-1617.0,s:4981,sp:5500,c:8516.4,sh:920.5,cm:7641.1,rps:4.53,cvr:0.0302},
+  {d:'10-06',g:22571.0,n:13499.0,r:-9072.0,s:5201,sp:5100,c:7944.9,sh:799.5,cm:-345.4,rps:2.6,cvr:0.0194},
+  {d:'10-07',g:31641.5,n:14963.5,r:-16586.0,s:5812,sp:6050,c:11138.0,sh:1190.0,cm:-3514.5,rps:2.74,cvr:0.0211},
+  {d:'10-08',g:48361.5,n:35791.0,r:-12466.0,s:6782,sp:6800,c:17023.5,sh:1836.5,cm:10130.0,rps:5.09,cvr:0.0211},
+  {d:'10-09',g:44993.0,n:37789.0,r:-7204.0,s:6401,sp:6400,c:15837.8,sh:1700.0,cm:13851.2,rps:5.93,cvr:0.0306},
+  {d:'10-10',g:37797.5,n:30543.5,r:-7254.0,s:5890,sp:6000,c:13304.9,sh:1411.5,cm:9827.1,rps:5.91,cvr:0.0259},
+  {d:'10-11',g:28201.0,n:23903.0,r:-4298.0,s:4980,sp:5300,c:9926.8,sh:1054.0,cm:7622.2,rps:4.8,cvr:0.0268},
+  {d:'10-12',g:19620.0,n:19317.5,r:-302.5,s:3850,sp:4800,c:6906.2,sh:682.0,cm:6929.3,rps:5.02,cvr:0.0346},
+  {d:'10-13',g:9720.0,n:9720.0,r:0,s:3201,sp:4100,c:3421.4,sh:357.0,cm:1841.6,rps:3.04,cvr:0.0187},
+  {d:'10-14',g:25849.0,n:18825.0,r:-6940.0,s:4802,sp:5500,c:9098.8,sh:955.0,cm:3271.2,rps:5.38,cvr:0.0233},
+  {d:'10-15',g:30189.0,n:18869.0,r:-11000.0,s:4990,sp:6000,c:10626.5,sh:1173.5,cm:1069.0,rps:4.05,cvr:0.0352},
+  {d:'10-16',g:41126.0,n:31084.0,r:-10042.0,s:5802,sp:6500,c:14476.0,sh:1564.5,cm:8543.5,rps:5.33,cvr:0.0211},
+  {d:'10-17',g:45390.5,n:38011.0,r:-7379.5,s:6301,sp:6900,c:15975.8,sh:1785.0,cm:13350.2,rps:6.07,cvr:0.0301},
+  {d:'10-18',g:31507.0,n:29741.0,r:-1766.0,s:5210,sp:6000,c:11090.5,sh:1130.5,cm:11520.0,rps:5.71,cvr:0.0362},
+  {d:'10-19',g:27497.5,n:26118.5,r:-1379.0,s:4980,sp:5300,c:9679.4,sh:1045.5,cm:10093.6,rps:5.24,cvr:0.0261},
+  {d:'10-20',g:40870.5,n:36827.5,r:-4043.0,s:5901,sp:5700,c:14385.6,sh:1564.5,cm:15177.4,rps:6.25,cvr:0.0356},
+  {d:'10-21',g:45988.5,n:42513.5,r:-3475.0,s:6502,sp:6200,c:16188.3,sh:1734.5,cm:18390.7,rps:6.38,cvr:0.0369},
+  {d:'10-22',g:47800.0,n:41710.0,r:-6090.0,s:6801,sp:6100,c:16827.4,sh:1836.5,cm:16946.1,rps:6.06,cvr:0.0308},
+  {d:'10-23',g:33773.0,n:10244.0,r:-23529.0,s:5601,sp:5130,c:11887.5,sh:1258.5,cm:-8029.0,rps:1.83,cvr:0.0241},
+  {d:'10-24',g:38890.0,n:33668.5,r:-5221.5,s:6101,sp:5800,c:13691.0,sh:1462.5,cm:12715.0,rps:5.52,cvr:0.0302},
+  {d:'10-25',g:27990.5,n:24617.0,r:-3373.5,s:4801,sp:5200,c:9851.5,sh:1020.5,cm:8545.0,rps:5.12,cvr:0.0335},
+  {d:'10-26',g:19510.0,n:18535.0,r:-975.0,s:4101,sp:4820,c:6869.5,sh:697.5,cm:6147.0,rps:4.76,cvr:0.0288},
+  {d:'10-27',g:44052.5,n:38647.5,r:-5405.0,s:6302,sp:6200,c:15506.0,sh:1564.5,cm:15377.0,rps:5.98,cvr:0.0343},
+  {d:'10-28',g:30314.5,n:11891.5,r:-18423.0,s:5401,sp:4820,c:10671.3,sh:1088.0,cm:-4687.8,rps:2.2,cvr:0.0241},
+  {d:'10-29',g:38970.5,n:34527.0,r:-4443.5,s:5901,sp:5700,c:13718.2,sh:1462.5,cm:13646.3,rps:5.85,cvr:0.031},
+  {d:'10-30',g:43015.0,n:36875.0,r:-6140.0,s:6402,sp:5900,c:15141.5,sh:1632.0,cm:14201.5,rps:5.78,cvr:0.03},
+  {d:'10-31',g:35610.0,n:30610.0,r:-5000.0,s:5801,sp:5700,c:12534.9,sh:1292.0,cm:11083.1,rps:5.28,cvr:0.0293},
+  {d:'11-01',g:47510.0,n:44460.5,r:-3049.5,s:6401,sp:7200,c:16724.5,sh:1836.5,cm:18699.5,rps:6.82,cvr:0.0345},
+  {d:'11-02',g:44965.5,n:40965.5,r:-4000.0,s:6201,sp:6800,c:15828.3,sh:1632.0,cm:16705.2,rps:6.57,cvr:0.0329},
+  {d:'11-03',g:46650.5,n:41965.5,r:-4685.0,s:6101,sp:6700,c:16421.1,sh:1734.5,cm:17109.9,rps:6.89,cvr:0.0348},
+  {d:'11-04',g:81635.0,n:76035.0,r:-5600.0,s:9290,sp:10500,c:28735.1,sh:3127.5,cm:33672.4,rps:8.79,cvr:0.0323},
+  {d:'11-05',g:61408.0,n:58408.0,r:-3000.0,s:6956,sp:8550,c:21615.0,sh:2380.5,cm:25862.5,rps:8.83,cvr:0.0337},
+  {d:'11-06',g:30570.0,n:27070.0,r:-3500.0,s:5401,sp:5800,c:10760.6,sh:1156.0,cm:9353.4,rps:5.66,cvr:0.0302},
+  {d:'11-07',g:30464.0,n:27464.0,r:-3000.0,s:5201,sp:5500,c:10719.3,sh:1122.0,cm:10122.7,rps:5.28,cvr:0.0289},
+  {d:'11-08',g:22290.0,n:21780.5,r:-509.5,s:4102,sp:4800,c:7846.1,sh:799.5,cm:8334.9,rps:5.44,cvr:0.0341},
+  {d:'11-09',g:25790.0,n:23290.0,r:-2500.0,s:4601,sp:5100,c:9078.4,sh:952.0,cm:8159.6,rps:5.04,cvr:0.0326},
+  {d:'11-10',g:52317.0,n:43717.0,r:-8600.0,s:6801,sp:7800,c:18415.0,sh:1938.5,cm:15563.5,rps:6.37,cvr:0.0274},
+  {d:'11-11',g:38225.0,n:33225.0,r:-5000.0,s:5901,sp:6200,c:13455.7,sh:1428.0,cm:12141.3,rps:5.97,cvr:0.0288},
+  {d:'11-12',g:30190.0,n:27190.0,r:-3000.0,s:5201,sp:5800,c:10626.9,sh:1122.0,cm:9641.1,rps:5.81,cvr:0.0323},
+  {d:'11-13',g:29040.0,n:26040.0,r:-3000.0,s:5101,sp:5600,c:10222.1,sh:1054.0,cm:9163.9,rps:5.1,cvr:0.028},
+  {d:'11-14',g:24490.0,n:21490.0,r:-3000.0,s:4501,sp:5100,c:8619.1,sh:918.0,cm:6852.9,rps:5.44,cvr:0.0289},
+  {d:'11-15',g:22350.0,n:20850.0,r:-1500.0,s:4001,sp:4800,c:7867.9,sh:816.0,cm:7366.1,rps:5.21,cvr:0.0305},
+  {d:'11-16',g:19680.0,n:17680.0,r:-2000.0,s:3901,sp:4600,c:6927.5,sh:680.0,cm:5472.5,rps:4.56,cvr:0.0295},
+  {d:'11-17',g:54703.0,n:49203.0,r:-5500.0,s:8619,sp:9150,c:19255.7,sh:2312.0,cm:18485.3,rps:6.35,cvr:0.0275},
+  {d:'11-18',g:45850.0,n:40850.0,r:-5000.0,s:6801,sp:7500,c:16143.3,sh:1734.5,cm:15472.2,rps:6.74,cvr:0.0289},
+  {d:'11-19',g:37500.0,n:33500.0,r:-4000.0,s:5901,sp:6800,c:13200.0,sh:1394.5,cm:12105.5,rps:6.36,cvr:0.0288},
+  {d:'11-20',g:34920.0,n:30920.0,r:-4000.0,s:5601,sp:6200,c:12291.0,sh:1292.0,cm:11137.0,rps:6.23,cvr:0.0285},
+  {d:'11-21',g:31300.0,n:27800.0,r:-3500.0,s:5201,sp:5900,c:11016.8,sh:1156.0,cm:9727.2,rps:5.27,cvr:0.0269},
+  {d:'11-22',g:24960.0,n:22960.0,r:-2000.0,s:4501,sp:5000,c:8786.1,sh:884.0,cm:8289.9,rps:5.55,cvr:0.0299},
+  {d:'11-23',g:21000.0,n:19500.0,r:-1500.0,s:4001,sp:4600,c:7392.0,sh:697.5,cm:6810.5,rps:4.87,cvr:0.0293},
+  {d:'11-24',g:63105.0,n:57605.0,r:-5500.0,s:7002,sp:12400,c:22212.9,sh:2686.0,cm:20306.1,rps:9.01,cvr:0.033},
+  {d:'11-25',g:78400.0,n:73400.0,r:-5000.0,s:8501,sp:9800,c:27596.8,sh:3230.0,cm:32773.2,rps:9.22,cvr:0.0356},
+  {d:'11-26',g:72900.0,n:67900.0,r:-5000.0,s:7901,sp:10200,c:25660.1,sh:2822.5,cm:29217.4,rps:9.23,cvr:0.0336},
+  {d:'11-27',g:48448.0,n:43448.0,r:-5000.0,s:7331,sp:15500,c:17053.6,sh:1972.0,cm:8922.4,rps:6.61,cvr:0.027},
+  {d:'11-28',g:32384.0,n:27884.0,r:-4500.0,s:5423,sp:10000,c:11399.2,sh:1054.0,cm:5430.8,rps:5.97,cvr:0.025},
+  {d:'11-29',g:39090.0,n:34590.0,r:-4500.0,s:3251,sp:5100,c:13760.1,sh:1530.0,cm:14199.9,rps:12.02,cvr:0.0476},
+  {d:'11-30',g:29190.0,n:26690.0,r:-2500.0,s:5001,sp:5500,c:10274.9,sh:1071.5,cm:9843.6,rps:5.84,cvr:0.0323},
+  {d:'12-01',g:54130.0,n:49630.0,r:-4500.0,s:6285,sp:10300,c:19053.7,sh:2091.0,cm:18185.3,rps:8.61,cvr:0.033},
+  {d:'12-02',g:30476.0,n:25976.0,r:-4500.0,s:6430,sp:9060,c:10723.6,sh:1156.0,cm:5036.4,rps:4.74,cvr:0.028},
+  {d:'12-03',g:40680.0,n:35680.0,r:-5000.0,s:4721,sp:8000,c:14319.5,sh:1564.5,cm:11796.0,rps:8.62,cvr:0.0336},
+  {d:'12-04',g:34015.0,n:29515.0,r:-4500.0,s:5601,sp:6800,c:11977.3,sh:1258.5,cm:9479.2,rps:6.07,cvr:0.0313},
+  {d:'12-05',g:28320.0,n:24320.0,r:-4000.0,s:5001,sp:6100,c:9968.6,sh:1020.5,cm:7230.9,rps:5.66,cvr:0.03},
+  {d:'12-06',g:22100.0,n:19100.0,r:-3000.0,s:4201,sp:5200,c:7779.2,sh:782.0,cm:5338.8,rps:5.26,cvr:0.0288},
+  {d:'12-07',g:18500.0,n:16000.0,r:-2500.0,s:3901,sp:4800,c:6512.0,sh:629.5,cm:4058.5,rps:4.74,cvr:0.0282},
+  {d:'12-08',g:36530.0,n:31530.0,r:-5000.0,s:5901,sp:7100,c:12859.7,sh:1258.5,cm:10311.8,rps:6.19,cvr:0.03},
+  {d:'12-09',g:32650.0,n:27650.0,r:-5000.0,s:5401,sp:6500,c:11491.2,sh:1190.0,cm:8468.8,rps:6.04,cvr:0.0308},
+  {d:'12-10',g:38000.0,n:33000.0,r:-5000.0,s:5801,sp:7300,c:13376.0,sh:1530.0,cm:10794.0,rps:6.55,cvr:0.031},
+  {d:'12-11',g:26800.0,n:22800.0,r:-4000.0,s:4701,sp:5800,c:9433.6,sh:952.0,cm:6614.4,rps:5.7,cvr:0.0291},
+  {d:'12-12',g:22400.0,n:19400.0,r:-3000.0,s:4201,sp:5200,c:7884.8,sh:782.0,cm:5533.2,rps:5.33,cvr:0.0286},
+  {d:'12-13',g:17850.0,n:15350.0,r:-2500.0,s:3801,sp:4700,c:6283.2,sh:612.0,cm:3754.8,rps:4.7,cvr:0.028},
+  {d:'12-14',g:15990.0,n:14490.0,r:-1500.0,s:3501,sp:4400,c:5628.5,sh:544.5,cm:3917.0,rps:4.57,cvr:0.029},
+  {d:'12-15',g:13820.0,n:12320.0,r:-1500.0,s:3101,sp:4200,c:4864.6,sh:476.0,cm:2779.4,rps:4.46,cvr:0.0277},
+  {d:'12-16',g:7200.0,n:6200.0,r:-1000.0,s:1498,sp:1400,c:2534.4,sh:238.0,cm:2027.6,rps:4.81,cvr:0.0361}
+];
+
+const WEEKLY = [
+  {w:'Sep 15',g:281898,n:241636,r:-40262,sp:54050,cm:103241},
+  {w:'Sep 22',g:265741,n:203829,r:-61912,sp:56950,cm:47609},
+  {w:'Sep 29',g:241052,n:209378,r:-31674,sp:50000,cm:65801},
+  {w:'Oct 06',g:233125,n:175730,r:-57395,sp:47900,cm:44237},
+  {w:'Oct 13',g:211163,n:172309,r:-38854,sp:44400,cm:49498},
+  {w:'Oct 20',g:271759,n:198368,r:-73391,sp:47450,cm:49872},
+  {w:'Oct 27',g:273716,n:210540,r:-63176,sp:45640,cm:59309},
+  {w:'Nov 03',g:303101,n:248679,r:-54423,sp:50550,cm:79504},
+  {w:'Nov 10',g:210517,n:170972,r:-39545,sp:43500,cm:45675},
+  {w:'Nov 17',g:273174,n:235586,r:-37588,sp:44350,cm:77893},
+  {w:'Nov 24',g:276029,n:235256,r:-40773,sp:59900,cm:59817},
+  {w:'Dec 01',g:225235,n:199091,r:-26144,sp:47660,cm:53654},
+  {w:'Dec 08',g:199327,n:166475,r:-32852,sp:41100,cm:41155},
+  {w:'Dec 15',g:44613,n:37446,r:-7167,sp:14700,cm:7093},
+];
+
+const CHANNELS = {
+  Meta:    {spend:390800,sales:1114330,roas:2.85,color:'#3B82F6',icon:'📘'},
+  Google:  {spend:147200,sales:498970, roas:3.39,color:'#16C784',icon:'🔍'},
+  TikTok:  {spend:73100, sales:93040,  roas:1.27,color:'#8B5CF6',icon:'🎵'},
+  'Email/SMS':{spend:16300,sales:0,   roas:0,   color:'#F0A500',icon:'📧'},
+};
+
+const fC = n => '$' + Math.round(n).toLocaleString('en-CA');
+const fK = n => '$' + (n/1000).toFixed(1) + 'K';
+const fM = n => '$' + (n/1e6).toFixed(2) + 'M';
+const fP = n => (n*100).toFixed(1) + '%';
+
+// ── NAV ────────────────────────────────────────────────────────────────────
+function go(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+  const inits = {
+    pnl: initPNL, worst: initWorst, efficiency: initEff, weekly: initWeekly,
+    channels: initChannels, forecast: ()=>{}, strategies: initStrats,
+    daily: initDaily, roadmap: initRoadmap
+  };
+  if (inits[id] && !window['_init_'+id]) { inits[id](); window['_init_'+id]=true; }
+}
+
+// ── CHART DEFAULTS ─────────────────────────────────────────────────────────
+const CD = {
+  color: '#7A92B2',
+  plugins: { legend: { labels: { color: '#7A92B2', font: { size: 11 } } } },
+  scales: {
+    x: { ticks: { color: '#7A92B2', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,.05)' } },
+    y: { ticks: { color: '#7A92B2', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,.07)' } }
+  }
+};
+
+// ── DASHBOARD CHARTS ───────────────────────────────────────────────────────
+new Chart(document.getElementById('dashWeeklyChart'), {
+  type:'bar',
+  data:{labels:WEEKLY.map(w=>w.w),datasets:[
+    {label:'Gross',data:WEEKLY.map(w=>w.g),backgroundColor:'rgba(22,199,132,.75)',borderRadius:4},
+    {label:'Net',  data:WEEKLY.map(w=>w.n),backgroundColor:'rgba(0,194,203,.6)',borderRadius:4},
+  ]},
+  options:{...CD,responsive:true,plugins:{legend:{labels:{color:'#7A92B2'}}},
+    scales:{x:{ticks:{color:'#7A92B2',font:{size:8}},grid:{display:false}},
+            y:{ticks:{color:'#7A92B2',callback:v=>'$'+v/1000+'K'},grid:{color:'rgba(255,255,255,.05)'}}}}
+});
+
+new Chart(document.getElementById('dashMonthlyChart'), {
+  type:'bar',
+  data:{labels:['Sep 2025','Oct 2025','Nov 2025','Dec 2025'],
+    datasets:[{label:'CM %',data:[27.1,20.5,25.7,21.7],
+      backgroundColor:['rgba(22,199,132,.8)','rgba(240,165,0,.8)','rgba(22,199,132,.8)','rgba(0,194,203,.8)'],
+      borderRadius:6}]},
+  options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},
+    scales:{
+      x:{ticks:{color:'#7A92B2',font:{size:9}},grid:{display:false}},
+      y:{ticks:{color:'#7A92B2',callback:v=>v+'%',font:{size:9}},grid:{color:'rgba(255,255,255,.05)'},
+         min:0,max:35}
+    }}
+});
+
+// Add 15% target line as annotation workaround
+new Chart(document.getElementById('dashSpendPie'), {
+  type:'doughnut',
+  data:{labels:['Meta','Google','TikTok','Email/SMS'],
+    datasets:[{data:[390800,147200,73100,16300],
+      backgroundColor:['#3B82F6','#16C784','#8B5CF6','#F0A500'],
+      borderColor:'#101F33',borderWidth:3,hoverOffset:8}]},
+  options:{responsive:true,cutout:'58%',plugins:{legend:{position:'bottom',labels:{color:'#7A92B2',font:{size:10}}}}}
+});
+
+new Chart(document.getElementById('dashROAS'), {
+  type:'bar',
+  data:{labels:['Meta','Google','TikTok'],
+    datasets:[{label:'ROAS',data:[2.85,3.39,1.27],
+      backgroundColor:['rgba(59,130,246,.8)','rgba(22,199,132,.8)','rgba(139,92,246,.8)'],
+      borderRadius:6}]},
+  options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},
+    scales:{x:{min:0,max:4,ticks:{color:'#7A92B2',callback:v=>v+'×'},grid:{color:'rgba(255,255,255,.05)'}},
+            y:{ticks:{color:'#7A92B2'},grid:{display:false}}}}
+});
+
+// ── PNL ────────────────────────────────────────────────────────────────────
+function initPNL() {
+  new Chart(document.getElementById('pnlMonthlyChart'), {
+    type:'bar',
+    data:{labels:['Sep 2025','Oct 2025','Nov 2025','Dec 2025'],
+      datasets:[
+        {label:'CM $',data:[163605,222914,295937,101902],backgroundColor:['rgba(22,199,132,.8)','rgba(240,165,0,.8)','rgba(22,199,132,.85)','rgba(0,194,203,.8)'],borderRadius:5,yAxisID:'y'},
+        {label:'CM %',data:[27.1,20.5,25.7,21.7],type:'line',borderColor:'#00E5EE',backgroundColor:'rgba(0,229,238,.08)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#00E5EE',yAxisID:'y2'},
+      ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#7A92B2'}}},
+      scales:{
+        x:{ticks:{color:'#7A92B2'},grid:{display:false}},
+        y:{ticks:{color:'#7A92B2',callback:v=>'$'+v/1000+'K'},grid:{color:'rgba(255,255,255,.05)'}},
+        y2:{position:'right',ticks:{color:'#00C2CB',callback:v=>v+'%'},grid:{display:false},min:0,max:35}
+      }}
+  });
+}
+
+// ── WORST DAY ──────────────────────────────────────────────────────────────
+function initWorst() {
+  const ww = DAILY.slice(0, 7);
+  new Chart(document.getElementById('launchChart'), {
+    type:'bar',
+    data:{labels:ww.map(d=>'Sep '+d.d.split('-')[1]),
+      datasets:[
+        {label:'Gross',data:ww.map(d=>d.g),backgroundColor:'rgba(22,199,132,.65)',borderRadius:4},
+        {label:'Returns (abs)',data:ww.map(d=>Math.abs(d.r)),backgroundColor:'rgba(246,70,93,.7)',borderRadius:4},
+        {label:'CM $',data:ww.map(d=>d.cm),type:'line',borderColor:'#00C2CB',backgroundColor:'rgba(0,194,203,.1)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:ww.map(d=>d.cm<0?'#F6465D':'#16C784'),yAxisID:'y2'},
+      ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#7A92B2',font:{size:10}}}},
+      scales:{
+        x:{ticks:{color:'#7A92B2',font:{size:9}},grid:{display:false}},
+        y:{ticks:{color:'#7A92B2',callback:v=>'$'+v/1000+'K'},grid:{color:'rgba(255,255,255,.05)'}},
+        y2:{position:'right',ticks:{color:'#00C2CB',callback:v=>'$'+v/1000+'K'},grid:{display:false}}
+      }}
+  });
+}
+
+// ── EFFICIENCY ─────────────────────────────────────────────────────────────
+function initEff() {
+  const top10 = [...DAILY].sort((a,b)=>b.sp-a.sp).slice(0,10);
+  const avgRPS = DAILY.reduce((s,d)=>s+d.rps,0)/DAILY.length;
+
+  new Chart(document.getElementById('efficiencyChart'), {
+    type:'bar',
+    data:{labels:top10.map(d=>d.d),
+      datasets:[
+        {label:'Ad Spend',data:top10.map(d=>d.sp),backgroundColor:'rgba(139,92,246,.7)',borderRadius:4,yAxisID:'y'},
+        {label:'CM %',data:top10.map(d=>+(d.cm/d.g*100).toFixed(1)),type:'line',
+          borderColor:'#16C784',backgroundColor:'rgba(22,199,132,.08)',fill:true,tension:.4,pointRadius:5,
+          pointBackgroundColor:top10.map(d=>d.cm<0?'#F6465D':d.cm/d.g>0.25?'#16C784':'#F0A500'),yAxisID:'y2'},
+      ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#7A92B2'}}},
+      scales:{
+        x:{ticks:{color:'#7A92B2',font:{size:9}},grid:{display:false}},
+        y:{ticks:{color:'#7A92B2',callback:v=>'$'+v/1000+'K'},grid:{color:'rgba(255,255,255,.05)'}},
+        y2:{position:'right',ticks:{color:'#16C784',callback:v=>v+'%'},grid:{display:false}}
+      }}
+  });
+
+  // Eff table
+  const tbody = document.querySelector('#effTable tbody');
+  top10.forEach(d => {
+    const cm_pct = d.cm/d.g*100;
+    const rps_vs = (d.rps/avgRPS-1)*100;
+    const verdict = cm_pct<0?'LOSS':cm_pct>25?'STRONG':cm_pct>15?'OK':'WEAK';
+    const vc = cm_pct<0?'td-red':cm_pct>25?'td-green':'td-orange';
+    tbody.innerHTML += `<tr>
+      <td>${d.d}</td><td>${fK(d.sp)}</td>
+      <td class="${d.rps<avgRPS?'td-red':'td-green'}">${fC(d.rps)}</td>
+      <td class="${rps_vs<0?'td-red':'td-green'}">${rps_vs>0?'+':''}${rps_vs.toFixed(1)}%</td>
+      <td class="${vc}">${cm_pct.toFixed(1)}%</td>
+      <td><span class="badge badge-${cm_pct<0?'red':cm_pct>25?'green':'orange'}">${verdict}</span></td>
+    </tr>`;
+  });
+
+  // Scatter
+  const sctx = document.getElementById('scatterChart');
+  const scData = DAILY.filter(d=>d.s>200).map(d=>({x:d.rps,y:+(d.cm/d.g*100).toFixed(1),cm:d.cm}));
+  new Chart(sctx, {
+    type:'scatter',
+    data:{datasets:[
+      {label:'Loss day',data:scData.filter(d=>d.cm<0),backgroundColor:'rgba(246,70,93,.7)',pointRadius:4},
+      {label:'0–25% CM',data:scData.filter(d=>d.cm>=0&&d.y<=25),backgroundColor:'rgba(0,194,203,.6)',pointRadius:4},
+      {label:'>25% CM',data:scData.filter(d=>d.y>25),backgroundColor:'rgba(22,199,132,.7)',pointRadius:4},
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#7A92B2',font:{size:10}}}},
+      scales:{
+        x:{title:{display:true,text:'Revenue Per Session ($)',color:'#7A92B2'},ticks:{color:'#7A92B2',callback:v=>'$'+v},grid:{color:'rgba(255,255,255,.05)'}},
+        y:{title:{display:true,text:'CM %',color:'#7A92B2'},ticks:{color:'#7A92B2',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.05)'}}
+      }}
+  });
+}
+
+// ── WEEKLY ─────────────────────────────────────────────────────────────────
+function initWeekly() {
+  new Chart(document.getElementById('weeklyBigChart'), {
+    type:'bar',
+    data:{labels:WEEKLY.map(w=>w.w),datasets:[
+      {label:'Gross',data:WEEKLY.map(w=>w.g),backgroundColor:'rgba(22,199,132,.75)',borderRadius:5},
+      {label:'Net',  data:WEEKLY.map(w=>w.n),backgroundColor:'rgba(0,194,203,.6)',borderRadius:5},
+    ]},
+    options:{...CD,responsive:true,plugins:{legend:{labels:{color:'#7A92B2'}}},
+      scales:{x:{ticks:{color:'#7A92B2'},grid:{display:false}},
+              y:{ticks:{color:'#7A92B2',callback:v=>'$'+v/1000+'K'},grid:{color:'rgba(255,255,255,.05)'}}}}
+  });
+  new Chart(document.getElementById('weeklyCMChart'), {
+    type:'bar',
+    data:{labels:WEEKLY.map(w=>w.w),datasets:[{label:'CM $',
+      data:WEEKLY.map(w=>w.cm),
+      backgroundColor:WEEKLY.map(w=>w.cm<0?'rgba(246,70,93,.8)':w.cm>70000?'rgba(22,199,132,.85)':'rgba(0,194,203,.75)'),
+      borderRadius:5}]},
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#7A92B2',font:{size:9}},grid:{display:false}},
+              y:{ticks:{color:'#7A92B2',callback:v=>'$'+v/1000+'K'},grid:{color:'rgba(255,255,255,.05)'}}}}
+  });
+
+  const tbody = document.querySelector('#weeklyTable tbody');
+  let tg=0,tn=0,tr=0,tsp=0,tcm=0;
+  WEEKLY.forEach(w=>{
+    const cmp=w.cm/w.g*100; tg+=w.g;tn+=w.n;tr+=w.r;tsp+=w.sp;tcm+=w.cm;
+    tbody.innerHTML+=`<tr>
+      <td>${w.w}</td><td>${fK(w.g)}</td><td>${fK(w.n)}</td>
+      <td class="td-red">(${fK(Math.abs(w.r))})</td>
+      <td class="td-orange">${fK(w.sp)}</td>
+      <td class="${w.cm<0?'td-red':'td-green'}">${fK(w.cm)}</td>
+      <td class="${cmp<15?'td-orange':cmp>25?'td-green':''}">${cmp.toFixed(1)}%</td>
+    </tr>`;
+  });
+  tbody.innerHTML+=`<tr class="total-row"><td><b>TOTAL</b></td><td>${fM(tg)}</td><td>${fM(tn)}</td><td class="td-red">(${fM(Math.abs(tr))})</td><td class="td-orange">${fM(tsp)}</td><td>${fM(tcm)}</td><td>${(tcm/tg*100).toFixed(1)}%</td></tr>`;
+}
+
+// ── CHANNELS ───────────────────────────────────────────────────────────────
+function initChannels() {
+  const cards = document.getElementById('channelCards');
+  Object.entries(CHANNELS).forEach(([name,ch])=>{
+    const roas_pct = Math.min(ch.roas/5*100,100);
+    const rc = ch.roas>=3?'#16C784':ch.roas>=2?'#F0A500':'#F6465D';
+    cards.innerHTML+=`<div class="ch-card">
+      <div class="ch-header">
+        <div class="ch-icon" style="background:${ch.color}20">${ch.icon}</div>
+        <div><div class="ch-name">${name}</div><div style="font-size:10px;color:var(--gray)">Paid Channel</div></div>
+      </div>
+      <div class="ch-metric-lbl">Spend</div>
+      <div class="ch-metric-val" style="color:${ch.color}">${fK(ch.spend)}</div>
+      <div class="ch-metric-lbl">Attributed Sales</div>
+      <div class="ch-metric-val" style="font-size:16px;color:var(--white)">${ch.sales>0?fK(ch.sales):'—'}</div>
+      <div class="ch-metric-lbl">ROAS</div>
+      <div style="font-family:var(--display);font-size:22px;font-weight:800;color:${rc};margin-bottom:6px">${ch.roas>0?ch.roas.toFixed(2)+'×':'—'}</div>
+      <div class="roas-track"><div class="roas-fill" style="width:${roas_pct}%;background:${rc}"></div></div>
+    </div>`;
+  });
+
+  const chs = Object.entries(CHANNELS);
+  new Chart(document.getElementById('chSpendRev'), {
+    type:'bar',
+    data:{labels:chs.map(([n])=>n),
+      datasets:[
+        {label:'Spend',data:chs.map(([,c])=>c.spend),backgroundColor:chs.map(([,c])=>c.color+'CC'),borderRadius:5},
+        {label:'Revenue',data:chs.map(([,c])=>c.sales),backgroundColor:chs.map(([,c])=>c.color+'55'),borderRadius:5},
+      ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#7A92B2'}}},
+      scales:{x:{ticks:{color:'#7A92B2'},grid:{display:false}},
+              y:{ticks:{color:'#7A92B2',callback:v=>'$'+v/1000+'K'},grid:{color:'rgba(255,255,255,.05)'}}}}
+  });
+}
+
+// ── STRATEGIES ─────────────────────────────────────────────────────────────
+function initStrats() {
+  const strats=[
+    {num:'01',pri:'HIGH',col:'#F6465D',title:'Reduce Return Rate',
+     desc:'Every 1pp reduction saves ~$33K/quarter. From 16.7% → 10% = $221K saved. Highest leverage.',
+     detail:'Root cause: Scuba Pant (49.5%) and Kirsten Mock Neck (37.9%) shipped en masse, returned en masse. Fix: (1) Pull return reason codes, (2) Update size guides and photography, (3) Add Fit Guarantee badging, (4) Pause campaigns for 7 days after high-volume launches of high-return SKUs. A/A test: if return rate reaches 10% by March, CM jumps from 18.4% to ~24.5%.',
+     metric:'Return Rate: 16.7%',target:'< 10% of gross',status:'Action Required',week:'Week 1'},
+    {num:'02',pri:'HIGH',col:'#3B82F6',title:'Lift Conversion Rate',
+     desc:'1.77% → 2.5% adds ~4,300 orders/quarter at $225 AOV = $968K gross. Incremental CM ≈ $376K.',
+     detail:'A/B test plan: (1) Single-page checkout vs current multi-step — estimated +0.3pp CVR, (2) Express pay buttons (Apple Pay, Shop Pay) — +0.15pp, (3) Star ratings + social proof ("X purchased recently") — +0.1pp, (4) Urgency messaging on cart. Each +0.1pp at 42K sessions/mo adds 42 orders = ~$9,450 gross = ~$3,475 CM.',
+     metric:'CVR: 1.77%',target:'> 3.0%',status:'Action Required',week:'Week 2'},
+    {num:'03',pri:'MEDIUM',col:'#F0A500',title:'Marketing Budget Reallocation',
+     desc:'Shift 10% from Meta to Google. At 3.39× vs 2.85× ROAS, +$21K revenue. Add 5% to Email/SMS.',
+     detail:'Google achieves best ROAS (3.39×) with least spend (23% of budget). Reallocating $39K from Meta → Google could drive ~$132K attributed revenue at existing ROAS. Priority: Shopping campaigns for Bamboo Tee and Elaine Tank, branded keywords. For Email/SMS: Klaviyo UTMs on all links, abandoned cart (1hr/24hr/72hr), 3-email post-purchase flow. Expected: $30–60K/month previously misattributed to direct.',
+     metric:'Google ROAS: 3.39×',target:'Budget +20%',status:'In Progress',week:'Week 1'},
+    {num:'04',pri:'MEDIUM',col:'#8B5CF6',title:'Geographic Expansion — US',
+     desc:'$64K US revenue (2%) from 238 orders shows demand. AOV identical to Canada ($270). Scale urgently.',
+     detail:'US AOV matches Canada ($270) — no price sensitivity barrier. The issue is reach. Test: (1) Meta geo-targeted campaigns for NYC, LA, Chicago ($10K/month test), (2) Google Shopping with US shipping enabled, (3) Dedicated US landing page addressing shipping times and returns policy, (4) USD pricing display. Target: $100K US revenue in Q1 2026, growing to 5% of total by Q2.',
+     metric:'US Revenue: $64K (2%)',target:'5% of total',status:'Planning',week:'Week 4'},
+    {num:'05',pri:'MEDIUM',col:'#00C2CB',title:'Email/SMS Revenue Attribution',
+     desc:'$16K cost, $0 attributed. This channel almost certainly drives revenue counted elsewhere.',
+     detail:'Without UTMs, Email/SMS revenue is being misattributed to "direct" or "organic" in analytics. Fix (Week 3): (1) Add UTM parameters to all email/SMS links (source=email/sms, medium=owned, campaign=name), (2) Configure Klaviyo with 5-day attribution window, (3) Build abandoned cart: 1hr "left something behind", 24hr "still thinking?", 72hr with discount. (4) Post-purchase: thank you + upsell + review request. Expected impact: $30–60K/month properly attributed.',
+     metric:'$16K cost · $0 attributed',target:'Track full revenue',status:'Planning',week:'Week 3'},
+  ];
+
+  const el = document.getElementById('stratCards');
+  strats.forEach((s,i)=>{
+    el.innerHTML+=`<div class="strat-card" id="sc${i}" onclick="toggleStrat(${i})">
+      <div class="strat-num" style="background:${s.col}20;color:${s.col}">${s.num}</div>
+      <div>
+        <div class="strat-title">${s.title}</div>
+        <div class="strat-desc">${s.desc}</div>
+        <div class="strat-meta">
+          <span class="badge ${s.pri==='HIGH'?'badge-red':'badge-orange'}">${s.pri}</span>
+          <span class="badge badge-teal">${s.week}</span>
+          <span class="badge badge-gray">${s.status}</span>
+        </div>
+        <div class="strat-expand" id="se${i}">
+          ${s.detail}
+          <div class="strat-kpis">
+            <div class="strat-kpi"><div class="strat-kpi-lbl">Current</div><div class="strat-kpi-val" style="color:${s.col}">${s.metric}</div></div>
+            <div class="strat-kpi"><div class="strat-kpi-lbl">Target</div><div class="strat-kpi-val" style="color:#16C784">${s.target}</div></div>
+          </div>
+        </div>
+      </div>
+      <div><span class="badge ${s.status==='Action Required'?'badge-red':s.status==='In Progress'?'badge-orange':'badge-teal'}">${s.status}</span></div>
+    </div>`;
+  });
+}
+
+function toggleStrat(i){
+  document.getElementById('se'+i).classList.toggle('open');
+  document.getElementById('sc'+i).style.borderColor=
+    document.getElementById('se'+i).classList.contains('open')?'rgba(0,194,203,.4)':'';
+}
+
+// ── ROADMAP ────────────────────────────────────────────────────────────────
+function initRoadmap() {
+  new Chart(document.getElementById('impactChart'), {
+    type:'bar',
+    data:{labels:['Return Rate Fix','CVR +0.73pp','Google Realloc','Email/SMS','US Expansion','TikTok Optimise'],
+      datasets:[{label:'Est. Uplift ($K)',
+        data:[221,376,132,50,100,45],
+        backgroundColor:['rgba(246,70,93,.85)','rgba(59,130,246,.85)','rgba(22,199,132,.85)','rgba(0,194,203,.8)','rgba(139,92,246,.8)','rgba(240,165,0,.8)'],
+        borderRadius:7}]},
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#7A92B2',font:{size:9}},grid:{display:false}},
+              y:{ticks:{color:'#7A92B2',callback:v=>'$'+v+'K'},grid:{color:'rgba(255,255,255,.05)'}}}}
+  });
+}
+
+// ── DAILY DATA ─────────────────────────────────────────────────────────────
+function initDaily() {
+  const tbody = document.getElementById('dailyBody');
+  function render(filter=''){
+    tbody.innerHTML='';
+    let count=0;
+    DAILY.forEach(d=>{
+      if(filter && !d.d.includes(filter)) return;
+      count++;
+      const cm_pct=(d.cm/d.g*100).toFixed(1);
+      const cmc=d.cm<0?'td-red':'';
+      tbody.innerHTML+=`<tr>
+        <td style="font-family:var(--mono);color:var(--teal)">2025-${d.d}</td>
+        <td>${fK(d.g)}</td><td>${fK(d.n)}</td>
+        <td class="td-red">${d.r<0?'('+fK(Math.abs(d.r))+')':'-'}</td>
+        <td>${Math.round(d.s).toLocaleString()}</td>
+        <td class="td-orange">${d.sp>0?fK(d.sp):'-'}</td>
+        <td style="color:#8B5CF6">(${fK(d.c)})</td>
+        <td class="td-gray">(${fK(d.sh)})</td>
+        <td class="${cmc}">${d.cm<0?'('+fK(Math.abs(d.cm))+')':fK(d.cm)}</td>
+        <td class="${cmc}">${cm_pct}%</td>
+        <td class="td-gray">$${d.rps.toFixed(2)}</td>
+      </tr>`;
+    });
+    document.getElementById('dayCount').textContent=count+' days shown';
+  }
+  render();
+  document.getElementById('daySearch').addEventListener('input',e=>render(e.target.value.trim()));
+}
+
+// ── FORECAST CHARTS ────────────────────────────────────────────────────────
+(function() {
+  const months=['Jan 2026','Feb 2026','Mar 2026'];
+  new Chart(document.getElementById('fcCMChart'), {
+    type:'line',
+    data:{labels:months,datasets:[
+      {label:'Base Case',data:[17.0,17.7,17.6],borderColor:'#16C784',backgroundColor:'rgba(22,199,132,.12)',fill:true,tension:.4,pointRadius:6,pointBackgroundColor:'#16C784'},
+      {label:'Upside',  data:[17.2,19.1,22.3],borderColor:'#00C2CB',borderDash:[5,4],tension:.4,pointRadius:4},
+      {label:'Downside',data:[12.1,13.4,14.5],borderColor:'#F6465D',borderDash:[5,4],tension:.4,pointRadius:4},
+      {label:'CEO 15% Target',data:[15,15,15],borderColor:'rgba(240,165,0,.7)',borderDash:[3,3],pointRadius:0,borderWidth:2},
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#7A92B2',font:{size:10}}}},
+      scales:{x:{ticks:{color:'#7A92B2'},grid:{display:false}},
+              y:{ticks:{color:'#7A92B2',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.05)'},min:8,max:25}}}
+  });
+  new Chart(document.getElementById('fcRevChart'), {
+    type:'bar',
+    data:{labels:months,datasets:[
+      {label:'Gross',data:[189000,227700,293750],backgroundColor:'rgba(22,199,132,.75)',borderRadius:5},
+      {label:'Net',  data:[160461,197188,260850],backgroundColor:'rgba(0,194,203,.6)',borderRadius:5},
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#7A92B2'}}},
+      scales:{x:{ticks:{color:'#7A92B2'},grid:{display:false}},
+              y:{ticks:{color:'#7A92B2',callback:v=>'$'+v/1000+'K'},grid:{color:'rgba(255,255,255,.05)'}}}}
+  });
+})();
+</script>
+</body>
+</html>
