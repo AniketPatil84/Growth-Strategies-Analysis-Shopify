@@ -1,5 +1,5 @@
 Growth_Strategies_GSheets
-"We analysed 91 days of real trading data from September to December 2025. What we found was both encouraging and alarming — and it tells a very clear story about where Q1 2026 needs to go."
+"We analysed 91 days of real trading data from 17 September to 16 December 2025. What we found was both encouraging and alarming — and it tells a very clear story about where Q1 2026 needs to go."
 PART 1: THE FORENSIC AUDIT — What Actually Happened?
 Slide 1 — The True P&L
 The headline number everyone sees is $3.31M in gross sales. But that's not the number that matters. The number that matters is Contribution Margin — what's left after you pay for product, shipping, and ads.
