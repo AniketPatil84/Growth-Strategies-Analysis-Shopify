@@ -1,4 +1,5 @@
 Growth_Strategies_GSheets
+
 "We analysed 91 days of real trading data from 17 September to 16 December 2025. What we found was both encouraging and alarming — and it tells a very clear story about where Q1 2026 needs to go."
 PART 1: THE FORENSIC AUDIT — What Actually Happened?
 Slide 1 — The True P&L
@@ -14,7 +15,7 @@ Less Shipping ($8.50/order)	($128,291)
 Less Ad Spend	($627,400)
 Contribution Margin	$784,384 — 23.7%
 "The CEO wants 15% in Q1. We're already at 23.7%. The target isn't the challenge — keeping it there is."
-The COGS number is verified — not guessed. It comes from dividing $1,135,677 in actual cost of goods by $3,226,515 in gross sales, directly from the product variant CSV. That gives us 35.20%, locked in the model.
+The COGS number is verified — not guessed. It comes from dividing the actual cost of goods ($ 1,135,677) by the gross sales ($3,226,515), directly from the product variant CSV. That gives us 35.20%, locked in the model.
 ________________________________________
 Slide 2 — The Cash Burn Day
 "September 23rd was the single worst day in the entire period. Contribution Margin: negative $12,951. That's a -33.2% margin. How? Returns."
@@ -49,7 +50,7 @@ ________________________________________
 Slide 5 — The CEO Verdict
 "The honest answer to 'Can we hit 15%?' is: we already did — at 23.7%. The real question is what we're aiming for."
 My recommendation: Upgrade the CEO target from 15% to 20% for Q1, with monthly milestones of 19% / 20% / 21%. The 15% bar is too conservative, given Q4 performance and will not drive the team accountability needed to sustain improvement.
-The only scenario where Q1 misses 15% is if return rates stay at 16.7% and nothing else improves — even then, January still comes in at approximately 16.8%. The floor is above the target.
+The only scenario in which Q1 misses 15% is if return rates remain at 16.7% and nothing else improves — even then, January still comes in at approximately 16.8%. The floor is above the target.
 Conclusion:-"Three things to take from this. First — track Contribution Margin daily, not just ROAS. Second — returns are the single biggest lever, and it's fixable with product content, not more ad spend. Third — the business is healthier than the headline numbers suggest, but Sep 23 showed exactly how fast that can change when returns spike and spend doesn't pause. The model is in your hands. Change the assumptions, run the scenarios, and make the plan."
 ________________________________________
 
